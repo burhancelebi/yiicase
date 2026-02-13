@@ -1,0 +1,62 @@
+services:
+    web:
+        build:
+            context: .
+            dockerfile: ./docker/Dockerfile
+        container_name: yiicase
+        working_dir: /var/www/html
+        tty: true
+        restart: unless-stopped
+        volumes:
+            - ./:/var/www/html
+            - ./docker/php/php.ini:/usr/local/etc/php/php.ini
+        expose:
+            - "9000"
+        networks:
+            - yiicase
+
+    #Nginx Service
+    nginx:
+        image: nginx:latest
+        container_name: nginx
+        ports:
+            - "8002:8002"
+        volumes:
+            - ./:/var/www/html
+            - ./docker/nginx/app.conf:/etc/nginx/conf.d/app.conf
+        depends_on:
+            - web
+        networks:
+            - yiicase
+
+    mysql:
+        image: mysql:8
+        container_name: mysql
+        restart: unless-stopped
+        platform: linux/x86_64
+        tty: true
+        volumes:
+            - mysql-data:/var/lib/mysql
+            - mysql-log:/var/log/mysql
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_DATABASE: yiicase
+            MYSQL_ROOT_PASSWORD: 1234
+            MYSQL_PASSWORD: 1234
+            MYSQL_ROOT_HOST: '%'
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        networks:
+            - yiicase
+
+#Docker Networks
+networks:
+    yiicase:
+        driver: bridge
+
+volumes:
+    mysql-log:
+        driver: local
+    mysql-data:
+        driver: local
